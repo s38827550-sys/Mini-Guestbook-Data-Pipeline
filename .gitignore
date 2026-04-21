@@ -1,22 +1,22 @@
 # --- 파이썬 관련 ---
-.venv/                  # 가상환경 폴더 (용량 크고 환경마다 다름)
-__pycache__/            # 파이썬 실행 시 생성되는 임시 파일
-*.py[cod]               # 컴파일된 파이썬 파일
+.venv/                
+__pycache__/          
+*.py[cod]            
 
 # --- 데이터 및 데이터베이스 ---
-*.db                    # SQLite 등 로컬 DB 파일
-mysql_data/             # MySQL 데이터 저장 폴더
-postgres_data/         # PostgreSQL 데이터 저장 폴더 (보안 및 용량)
-*.csv                   # 대용량 데이터 파일 (필요한 경우에만 제외)
-*.log                   # 실행 로그 파일
+*.db                    
+mysql_data/             
+postgres_data/         
+*.csv                   
+*.log                   
 
 # --- 설정 및 보안 (가장 중요) ---
-.env                    # DB 비밀번호, API 키 등 민감 정보가 담긴 파일
-config.json             # 설정 파일 (민감 정보 포함 시)
-*.spec                  # 빌드 설정 파일 (Pyinstaller 등 사용 시)
+.env                    
+config.json             
+*.spec                  
 
 # --- 도구 및 OS 관련 ---
-.vscode/                # VS Code 설정
-.idea/                  # PyCharm 설정
-.DS_Store               # Mac OS에서 자동 생성되는 파일
-Thumbs.db               # Windows에서 자동 생성되는 파일
+.vscode/                
+.idea/                  
+.DS_Store               
+Thumbs.db               
