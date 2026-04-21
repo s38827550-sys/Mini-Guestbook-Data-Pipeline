@@ -11,7 +11,7 @@ postgres_data/
 *.log                   
 
 # --- 설정 및 보안 (가장 중요) ---
-.env                    
+.env              
 config.json             
 *.spec                  
 
