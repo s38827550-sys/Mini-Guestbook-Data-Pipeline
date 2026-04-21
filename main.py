@@ -6,28 +6,34 @@ app = FastAPI()
 
 # DB 연결 설정 (환경변수 활용)
 def get_db_conn():
+    # os.getenv("변수명", "기본값") -> 환경변수가 없을 경우 대비
     return psycopg2.connect(
-        host="db", # 도커 컴포즈의 서비스 이름이 호스트가 됩니다.
-        database=os.getenv("POSTGRES_DB"),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD")
+        host=os.getenv("DB_HOST", "db"), 
+        database=os.getenv("DB_NAME", "guestbook"),
+        user=os.getenv("DB_USER", "user"),
+        password=os.getenv("DB_PASSWORD", "qwer1234"),
+        port=os.getenv("DB_PORT", "5432")
     )
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Guestbook API"}
 
+# 브라우저 테스트를 위해 임시로 GET으로 변경하셔도 됩니다! (@app.get)
 @app.post("/visit/{name}")
 def add_visit(name: str):
     conn = get_db_conn()
     cur = conn.cursor()
-    # 테이블이 없으면 생성하고 이름 저장 (SQL 문법 활용)
-    cur.execute("CREATE TABLE IF NOT EXISTS guests (name TEXT);")
-    cur.execute("INSERT INTO guests (name) VALUES (%s);", (name,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return {"status": "success", "added": name}
+    try:
+        cur.execute("CREATE TABLE IF NOT EXISTS guests (name TEXT);")
+        cur.execute("INSERT INTO guests (name) VALUES (%s);", (name,))
+        conn.commit()
+        return {"status": "success", "added": name}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        cur.close()
+        conn.close()
 
 @app.get("/guests")
 def get_guests():
