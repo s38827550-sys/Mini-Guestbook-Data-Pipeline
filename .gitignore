@@ -6,7 +6,7 @@ __pycache__/            # 파이썬 실행 시 생성되는 임시 파일
 # --- 데이터 및 데이터베이스 ---
 *.db                    # SQLite 등 로컬 DB 파일
 mysql_data/             # MySQL 데이터 저장 폴더
-postgres_data/          # PostgreSQL 데이터 저장 폴더 (보안 및 용량)
+/postgres_data/         # PostgreSQL 데이터 저장 폴더 (보안 및 용량)
 *.csv                   # 대용량 데이터 파일 (필요한 경우에만 제외)
 *.log                   # 실행 로그 파일
 
