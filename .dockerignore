@@ -1,0 +1,7 @@
+# 도커 빌드 시 무시할 목록
+mysql_data/
+postgres_data/
+.venv/
+__pycache__/
+.git/
+.vscode/
