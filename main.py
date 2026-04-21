@@ -8,11 +8,11 @@ app = FastAPI()
 def get_db_conn():
     # os.getenv("변수명", "기본값") -> 환경변수가 없을 경우 대비
     return psycopg2.connect(
-        host=os.getenv("DB_HOST", "db"), 
-        database=os.getenv("DB_NAME", "guestbook"),
-        user=os.getenv("DB_USER", "user"),
-        password=os.getenv("DB_PASSWORD", "qwer1234"),
-        port=os.getenv("DB_PORT", "5432")
+        host=os.getenv("DB_HOST"), 
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        port=os.getenv("DB_PORT")
     )
 
 @app.get("/")
