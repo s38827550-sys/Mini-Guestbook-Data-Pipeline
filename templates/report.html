@@ -1,12 +1,115 @@
-<h1>📊 대기질 분석 리포트</h1>
-<h3>🏆 어제의 청정 구역 TOP 5</h3>
-<table>
-    <tr><th>순위</th><th>지역</th><th>평균 미세먼지</th></tr>
-    {% for stat in top_stats %}
-    <tr>
-        <td>{{ loop.index }}위</td>
-        <td>{{ stat.station }}</td>
-        <td>{{ stat.pm10 }} ㎍/㎥</td>
-    </tr>
-    {% endfor %}
-</table>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대기질 분석 리포트</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e67e22;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .report-card {
+            background: var(--card-bg);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .stats-table th, .stats-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .stats-table th {
+            color: #888;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .rank {
+            font-weight: bold;
+            color: var(--accent-color);
+            width: 50px;
+        }
+        .station-name {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        .value {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .btn-back {
+            text-decoration: none;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #7f8c8d;
+            transition: color 0.3s;
+        }
+        .btn-back:hover { color: var(--primary-color); border-color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <div class="report-card">
+        <h1>📊 대기질 분석 리포트</h1>
+        <p class="subtitle">🏆 어제의 청정 구역 TOP 5 (미세먼지 농도 기준)</p>
+
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>측정소</th>
+                    <th style="text-align: right;">평균 PM10</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in top_stats %}
+                <tr>
+                    <td class="rank">{{ loop.index }}위</td>
+                    <td class="station-name">{{ stat.station }}</td>
+                    <td class="value">{{ stat.pm10 }} ㎍/㎥</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <a href="/view-air" class="btn-back">← 메인 대시보드로 돌아가기</a>
+        </div>
+    </div>
+</body>
+</html>
