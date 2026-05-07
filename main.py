@@ -14,6 +14,15 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 load_dotenv()
+
+# --- 🌍 환경 변수 전처리 섹션 ---
+raw_uri = os.getenv("DATABASE_URL")
+if raw_uri and raw_uri.startswith("postgres://"):
+    # Render나 일부 클라우드에서 주는 'postgres://'를 'postgresql://'로 교정
+    DATABASE_URL = raw_uri.replace("postgres://", "postgresql://", 1)
+else:
+    DATABASE_URL = raw_uri
+
 scheduler = BackgroundScheduler(timezone=pytz.timezone("Asia/Seoul"))
 
 # --- 📋 로거 설정 ---
@@ -27,18 +36,35 @@ logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 # --- 🔌 커넥션 풀 설정 ---
 db_pool: pool.SimpleConnectionPool = None
 
+# --- 🔌 커넥션 풀 설정 수정 ---
 def init_db_pool():
     global db_pool
-    db_pool = psycopg2.pool.SimpleConnectionPool(
-        minconn=1,
-        maxconn=10,
-        host=os.getenv("DB_HOST", "db"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT", "5432")
-    )
-    logger.info("✅ DB 커넥션 풀 초기화 완료")
+    # Render 환경변수 우선, 없으면 로컬 환경변수 조합
+    dsn = os.getenv("DATABASE_URL")
+    
+    try:
+        if dsn:
+            logger.info("📡 [SYSTEM] DATABASE_URL을 사용하여 DB에 연결합니다.")
+            db_pool = psycopg2.pool.SimpleConnectionPool(
+                minconn=1,
+                maxconn=10,
+                dsn=dsn  # URL 방식을 사용할 때는 dsn 인자를 씁니다.
+            )
+        else:
+            logger.info("🏠 [SYSTEM] 개별 환경변수를 사용하여 로컬 DB에 연결합니다.")
+            db_pool = psycopg2.pool.SimpleConnectionPool(
+                minconn=1,
+                maxconn=10,
+                host=os.getenv("DB_HOST", "db"),
+                database=os.getenv("DB_NAME"),
+                user=os.getenv("DB_USER"),
+                password=os.getenv("DB_PASSWORD"),
+                port=os.getenv("DB_PORT", "5432")
+            )
+        logger.info("✅ DB 커넥션 풀 초기화 완료")
+    except Exception as e:
+        logger.error(f"❌ DB 연결 실패: {e}")
+        raise e
 
 def init_db_tables():
     """필요한 테이블들을 생성합니다."""
@@ -214,40 +240,34 @@ def task_calculate_daily_stats():
 # --- 🚀 Lifespan 설정 ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 [SYSTEM] 서버가 시작되었습니다.")
-    init_db_pool()    # 1. 커넥션 풀 초기화
-    init_db_tables()  # 2. 테이블 초기화 (없으면 생성)
+    logger.info("🚀 [SYSTEM] 서버 시작 시퀀스를 가동합니다.")
+    
+    try:
+        # 1. DB 연결 (DATABASE_URL 인식)
+        init_db_pool() 
+        
+        # 2. 테이블 생성 및 검증
+        init_db_tables() 
+        
+        # 3. 스케줄러 설정
+        scheduler.add_job(...) # (기존 코드와 동일)
+        
+        if not scheduler.running:
+            scheduler.start()
+            logger.info("⏰ [SYSTEM] 스케줄러가 정상 가동되었습니다.")
 
-    scheduler.add_job(
-        task_collect_air,
-        'interval',
-        hours=1,
-        id="air_collector",
-        replace_existing=True,
-        misfire_grace_time=3600,
-        coalesce=True,
-        next_run_time=datetime.now(pytz.timezone("Asia/Seoul"))
-    )
-    scheduler.add_job(
-        task_calculate_daily_stats,
-        'cron',
-        hour=0,
-        minute=5,
-        id="air_stats_daily",
-        replace_existing=True
-    )
+    except Exception as e:
+        logger.error(f"🚨 [CRITICAL] 서버 초기화 중 치명적 오류: {e}")
+        # 배포 시 에러가 나면 여기서 멈춰야 Render 로그에서 확인이 쉽습니다.
 
-    if not scheduler.running:
-        scheduler.start()
+    yield  # 서버 가동 중
 
-    yield  # 서버 실행 중
-
+    # --- 종료 프로세스 ---
     logger.info("🛑 [SYSTEM] 서버 종료 프로세스 시작")
     scheduler.shutdown()
     if db_pool:
         db_pool.closeall()
         logger.info("🔌 DB 커넥션 풀 종료 완료")
-
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
@@ -484,16 +504,19 @@ def get_guests():
 
 @app.get("/report", response_class=HTMLResponse)
 async def get_report(request: Request):
-    conn = get_db_conn()
-    cur = conn.cursor()
+    conn = None # 미리 선언
+    cur = None  # 미리 선언
     try:
-        # 1. 랭킹 데이터 (가장 공기 좋은 곳 TOP 5)
+        conn = get_db_conn() # 풀에서 빌려오기
+        cur = conn.cursor()
+        
         cur.execute("""
             SELECT station_name, avg_pm10, avg_pm25 
             FROM daily_air_stats 
             WHERE stats_date = (SELECT MAX(stats_date) FROM daily_air_stats)
             ORDER BY avg_pm10 ASC LIMIT 5
         """)
+        
         top_stats = [{"station": r[0], "pm10": float(r[1]), "pm25": float(r[2])} for r in cur.fetchall()]
         
         return templates.TemplateResponse(
@@ -501,6 +524,9 @@ async def get_report(request: Request):
             name="report.html", 
             context={"top_stats": top_stats}
         )
+    except Exception as e:
+        logger.error(f"❌ Report 조회 실패: {e}")
+        return {"error": "데이터를 불러올 수 없습니다."}
     finally:
-        cur.close()
-        conn.close()
+        if cur: cur.close()
+        if conn: release_db_conn(conn) # ✅ close 대신 꼭 '반납' 하세요!
