@@ -248,13 +248,11 @@ async def lifespan(app: FastAPI):
         # 괄호()가 붙어있는지 확인하고 제거하세요!
         scheduler.add_job(
             task_collect_air,  # 👈 task_collect_air() 가 아니라 이름만!
-            'interval',
-            hours=1,
+            'cron',            # 'interval' 대신 'cron' 사용
+            minute=0,          # 매시 0분에 실행
             id="air_collector",
             replace_existing=True,
-            misfire_grace_time=3600,
-            coalesce=True,
-            next_run_time=datetime.now(pytz.timezone("Asia/Seoul"))
+            timezone=pytz.timezone("Asia/Seoul")
         )
 
         scheduler.add_job(
