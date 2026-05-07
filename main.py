@@ -258,6 +258,30 @@ def read_root():
     return {"message": "Welcome to Guestbook API"}
 
 
+@app.get("/health")
+def health_check():
+    """서버 및 데이터베이스 연결 상태를 확인합니다."""
+    db_status = "offline"
+    conn = None
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        cur.close()
+        db_status = "online"
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+    finally:
+        if conn:
+            release_db_conn(conn)
+    
+    return {
+        "status": "up",
+        "database": db_status,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
 @app.get("/collect-air")
 def collect_air_data():
     try:
