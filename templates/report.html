@@ -1,0 +1,12 @@
+<h1>📊 대기질 분석 리포트</h1>
+<h3>🏆 어제의 청정 구역 TOP 5</h3>
+<table>
+    <tr><th>순위</th><th>지역</th><th>평균 미세먼지</th></tr>
+    {% for stat in top_stats %}
+    <tr>
+        <td>{{ loop.index }}위</td>
+        <td>{{ stat.station }}</td>
+        <td>{{ stat.pm10 }} ㎍/㎥</td>
+    </tr>
+    {% endfor %}
+</table>

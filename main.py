@@ -175,23 +175,25 @@ def task_calculate_daily_stats():
         conn = get_db_conn()
         cur = conn.cursor()
 
+        # 수정된 쿼리: 어제 하루치만 하는 게 아니라, 통계 테이블에 없는 날짜들을 다 찾아서 채움
         insert_query = """
         INSERT INTO daily_air_stats (stats_date, station_name, avg_pm10, avg_pm25, max_pm10, data_count)
-        SELECT
-            CAST(measure_time AS DATE) AS stats_date,
+        SELECT 
+            CAST(measure_time AS DATE) as stats_date,
             station_name,
             ROUND(AVG(pm10)::numeric, 2),
             ROUND(AVG(pm25)::numeric, 2),
             MAX(pm10),
             COUNT(*)
         FROM air_quality
-        WHERE CAST(measure_time AS DATE) = CURRENT_DATE - INTERVAL '1 day'
+        -- 조건 변경: 오늘 데이터를 제외한 모든 과거 데이터를 대상으로 집계
+        WHERE CAST(measure_time AS DATE) < CURRENT_DATE 
         GROUP BY stats_date, station_name
-        ON CONFLICT (stats_date, station_name)
-        DO UPDATE SET
-            avg_pm10   = EXCLUDED.avg_pm10,
-            avg_pm25   = EXCLUDED.avg_pm25,
-            max_pm10   = EXCLUDED.max_pm10,
+        ON CONFLICT (stats_date, station_name) 
+        DO UPDATE SET 
+            avg_pm10 = EXCLUDED.avg_pm10,
+            avg_pm25 = EXCLUDED.avg_pm25,
+            max_pm10 = EXCLUDED.max_pm10,
             data_count = EXCLUDED.data_count;
         """
         cur.execute(insert_query)
@@ -479,3 +481,26 @@ def get_guests():
             cur.close()
         if conn:
             release_db_conn(conn)
+
+@app.get("/report", response_class=HTMLResponse)
+async def get_report(request: Request):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    try:
+        # 1. 랭킹 데이터 (가장 공기 좋은 곳 TOP 5)
+        cur.execute("""
+            SELECT station_name, avg_pm10, avg_pm25 
+            FROM daily_air_stats 
+            WHERE stats_date = (SELECT MAX(stats_date) FROM daily_air_stats)
+            ORDER BY avg_pm10 ASC LIMIT 5
+        """)
+        top_stats = [{"station": r[0], "pm10": float(r[1]), "pm25": float(r[2])} for r in cur.fetchall()]
+        
+        return templates.TemplateResponse(
+            request=request, 
+            name="report.html", 
+            context={"top_stats": top_stats}
+        )
+    finally:
+        cur.close()
+        conn.close()
