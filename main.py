@@ -291,6 +291,7 @@ def read_root():
 
 
 @app.get("/health")
+@app.head("/health")
 def health_check():
     """서버 및 데이터베이스 연결 상태를 확인합니다."""
     db_status = "offline"
