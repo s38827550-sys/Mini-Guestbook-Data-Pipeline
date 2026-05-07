@@ -1,4 +1,8 @@
 fastapi
 uvicorn
 psycopg2-binary
-dotenv
+requests
+python-dotenv
+jinja2
+apscheduler
+pytz

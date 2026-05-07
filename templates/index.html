@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>서울시 대기질 현황</title>
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .status-good { color: blue; }
+        .status-bad { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🌡️ 서울시 실시간 대기질 대시보드</h1>
+    <p>총 {{ count }}개의 데이터가 조회되었습니다.</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>측정 시간</th>
+                <th>측정소</th>
+                <th>미세먼지(PM10)</th>
+                <th>초미세먼지(PM25)</th>
+                <th>통합대기지수</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data %}
+            <tr>
+                <td>{{ item.time }}</td>
+                <td>{{ item.station }}</td>
+                <td>{{ item.pm10 }}</td>
+                <td>{{ item.pm25 }}</td>
+                <td>{{ item.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
