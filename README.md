@@ -1,91 +1,62 @@
-# 🌡️ Seoul Air Quality Data Pipeline & Mini Guestbook
+# 🌡️ Seoul Air Quality Data Pipeline (Phase 1: Backend Roadmap)
 
-서울시 실시간 대기질 데이터를 수집, 가공하고 방문자 기록을 관리하는 통합 데이터 파이프라인 프로젝트입니다. 
-자동화된 스케줄링(APScheduler), 데이터 영속성 관리, 그리고 클라우드 배포(Render) 지원 기능이 포함되어 있습니다.
+이 프로젝트는 단순히 API를 만드는 것에 그치지 않고, 백엔드 개발자의 필수 역량인 **[데이터 수집 - 저장 - 가공 - 배포 - 모니터링]**의 전 과정을 실전 데이터(서울시 공기질 Open API)로 직접 구현한 백엔드 엔지니어링 프로젝트입니다.
 
-## 🛠 기술 스택
+---
 
-| 분류 | 기술 |
-| :--- | :--- |
-| **Backend** | Python 3.12, FastAPI, Uvicorn |
-| **Database** | PostgreSQL 15 |
-| **Scheduling** | APScheduler (Background Tasks) |
-| **Frontend** | Jinja2 Templates (HTML/CSS) |
-| **Infrastructure** | Docker, Docker Compose, Render (Cloud) |
-| **Monitoring** | Healthcheck API, Docker Healthcheck |
+## 🏆 완료된 백엔드 로드맵 (Phase 1: 데이터 엔지니어링 & 클라우드)
+
+| 단계 | 핵심 성취 (Milestones) | 적용된 기술 |
+| :--- | :--- | :--- |
+| **1. 언어 & 환경** | Python 3.12 기반의 가상환경 구축 및 의존성 관리 | `Python`, `venv`, `pip` |
+| **2. API 설계** | REST API 엔드포인트 설계 및 비동기 처리 | `FastAPI`, `Pydantic`, `Jinja2` |
+| **3. DB 설계** | 관계형 DB 설계, PK 설정 및 데이터 정규화 | `PostgreSQL`, `psycopg2-pool` |
+| **4. 자동화** | Cron 방식을 활용한 주기적 배치(Batch) 작업 구현 | `APScheduler`, `pytz` |
+| **5. 배포 (DevOps)** | Docker 컨테이너라이징 및 클라우드 서비스 배포 | `Docker`, `Docker Compose`, `Render.com` |
+| **6. 안정성** | 환경 변수 관리 및 서버 상태 모니터링 | `.env`, `Health Check API`, `Docker Healthcheck` |
+
+---
+
+## ⚙️ 데이터 사이클 및 핵심 기능
+
+### 1. 데이터 수집 & 저장 (Collection & Storage)
+- **Hourly Batch**: APScheduler를 통해 매시간 서울시 Open API에서 실시간 공기질 데이터를 수집합니다.
+- **Data Integrity**: `ON CONFLICT` 로직을 적용하여 중복 데이터 적재를 방지하고 데이터의 무결성을 유지합니다.
+
+### 2. 데이터 가공 (Processing)
+- **Daily Analytics**: 매일 자정, 수집된 로우 데이터를 가공하여 일간 통계(`daily_air_stats`)를 생성합니다.
+- **Reporting**: 가공된 데이터를 바탕으로 공기질이 가장 깨끗한 지역 TOP 5 분석 리포트를 제공합니다.
+
+### 3. 클라우드 배포 & 인프라 (DevOps)
+- **Containerization**: `Dockerfile`과 `docker-compose.yml`을 통해 환경에 구애받지 않는 실행 환경을 구축했습니다.
+- **Multi-Environment Support**: 로컬 DB와 클라우드(Render) DB를 유연하게 전환할 수 있는 연결 로직을 포함합니다.
+
+### 4. 안정성 및 모니터링 (Stability)
+- **Self-Healing Infrastructure**: Docker Healthcheck(`pg_isready`)를 적용하여 DB가 준비된 후 서버가 실행되도록 설계했습니다.
+- **Monitoring API**: `/health` 엔드포인트를 통해 서버와 DB의 연결 상태를 실시간으로 확인할 수 있습니다.
+
+---
 
 ## 📁 프로젝트 구조
 
 ```text
 Mini-Guestbook-Data-Pipeline/
-├── main.py              # FastAPI 앱 (스케줄러, API 정의, DB 초기화, 배포 최적화)
-├── Dockerfile           # 웹 서버 컨테이너 빌드 설정
-├── docker-compose.yml   # DB(Healthcheck 포함) + 웹 서비스 오케스트레이션
-├── requirements.txt     # Python 패키지 목록
-├── .env.example         # 환경 변수 샘플 양식
-├── test_api.py          # 전체 엔드포인트 통합 테스트 스크립트
-├── templates/
-│   ├── index.html       # 대기질 대시보드 템플릿
-│   └── report.html      # 대기질 분석 리포트 템플릿
-└── .gitignore           # 보안 및 데이터 파일 관리
+├── main.py              # FastAPI 앱 (수집, 가공, 배포 로직 통합)
+├── Dockerfile           # 컨테이너 빌드 설정
+├── docker-compose.yml   # 인프라(DB + Web) 오케스트레이션
+├── requirements.txt     # 의존성 관리
+├── .env.example         # 환경 변수 가이드
+├── test_api.py          # 통합 테스트 스크립트
+└── templates/           # SSR을 위한 HTML 템플릿 (Dashboard, Report)
 ```
+
+---
 
 ## 🚀 시작하기
 
-### 1. 환경 변수 설정
-
-`.env` 파일을 생성하고 아래 내용을 설정하세요. 로컬 실행과 클라우드 배포 환경 모두 지원합니다.
-
-```text
-# 로컬 개발 환경용 (Docker Compose)
-DB_USER=your_user
-DB_PASSWORD=your_password
-DB_NAME=guestbook
-DB_HOST=db
-DB_PORT=5432
-
-# 클라우드 배포용 (Render 등)
-DATABASE_URL=your_database_url_here
-
-# 공통 설정
-SEOUL_API_KEY=your_seoul_api_key
-```
-
-### 2. 실행 (Docker Compose)
-
-```bash
-# 컨테이너 빌드 및 백그라운드 실행
-docker-compose up -d --build
-```
-
-- **대시보드**: [http://localhost:8000/view-air](http://localhost:8000/view-air)
-- **분석 리포트**: [http://localhost:8000/report](http://localhost:8000/report)
-- **헬스체크**: [http://localhost:8000/health](http://localhost:8000/health)
-
-## 📡 주요 API 엔드포인트
-
-### 🌬️ 대기질 데이터 (Air Quality)
-- **GET /view-air** : 실시간 대기질 현황 대시보드
-- **GET /report** : 대기질 통계 분석 리포트 (TOP 5 측정소 등)
-- **GET /air-data** : 대기질 원본 데이터 조회 (JSON)
-- **GET /air-summary** : 데이터 통계 요약 정보
-- **GET /health** : 시스템 상태 모니터링
-
-### ✍️ 방명록 (Guestbook)
-- **POST /visit/{name}** : 방문자 이름 등록
-- **GET /guests** : 전체 방문자 목록 조회
-
-## ⚙️ 시스템 설계 특징
-
-### 🕒 자동화된 데이터 파이프라인
-- **데이터 수집/가공**: 매시간 API 수집 및 매일 자정 통계 생성을 자동화했습니다.
-- **배포 최적화**: `DATABASE_URL` 감지 로직을 통해 클라우드 DB(Render 등)와 로컬 DB를 유연하게 전환합니다.
-
-### 🛡️ 견고한 인프라 및 운영
-- **DB 자동 초기화**: 서버 시작 시 필요한 테이블을 자동 생성하여 초기 설정 부담을 줄였습니다.
-- **오류 복구**: DB 연결 실패 시 상세 로깅 및 Lifespan 예외 처리를 통해 시스템 다운타임을 최소화합니다.
-- **검증**: `test_api.py`를 통해 모든 기능을 안정적으로 테스트할 수 있습니다.
-
-### 🔌 효율적인 자원 관리
-- **Connection Pooling**: 다중 접속 상황에서도 DB 성능을 유지하도록 설계되었습니다.
-- **Graceful Shutdown**: 서버 종료 시 스케줄러와 DB 연결을 안전하게 해제합니다.
+1.  **환경 설정**: `.env.example`을 참고하여 `.env` 파일을 작성합니다.
+2.  **실행**: `docker-compose up -d --build` 명령어로 전체 시스템을 가동합니다.
+3.  **확인**: 
+    - 대시보드: `http://localhost:8000/view-air`
+    - 분석 리포트: `http://localhost:8000/report`
+    - API 상태: `http://localhost:8000/health`
