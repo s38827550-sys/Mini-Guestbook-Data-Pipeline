@@ -40,6 +40,56 @@ def init_db_pool():
     )
     logger.info("✅ DB 커넥션 풀 초기화 완료")
 
+def init_db_tables():
+    """필요한 테이블들을 생성합니다."""
+    conn = None
+    cur = None
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        
+        # 1. air_quality 테이블
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS air_quality (
+                id SERIAL PRIMARY KEY,
+                measure_time TIMESTAMP,
+                station_name TEXT,
+                pm10 INTEGER,
+                pm25 INTEGER,
+                status TEXT,
+                UNIQUE(measure_time, station_name)
+            );
+        """)
+        
+        # 2. daily_air_stats 테이블
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS daily_air_stats (
+                id SERIAL PRIMARY KEY,
+                stats_date DATE,
+                station_name TEXT,
+                avg_pm10 NUMERIC,
+                avg_pm25 NUMERIC,
+                max_pm10 INTEGER,
+                data_count INTEGER,
+                UNIQUE(stats_date, station_name)
+            );
+        """)
+        
+        # 3. guests 테이블
+        cur.execute("CREATE TABLE IF NOT EXISTS guests (name TEXT);")
+        
+        conn.commit()
+        logger.info("✅ DB 테이블 초기화 완료")
+    except Exception as e:
+        logger.error(f"❌ DB 테이블 초기화 실패: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            release_db_conn(conn)
+
 def get_db_conn():
     """풀에서 커넥션을 빌려옴"""
     return db_pool.getconn()
@@ -163,7 +213,8 @@ def task_calculate_daily_stats():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 [SYSTEM] 서버가 시작되었습니다.")
-    init_db_pool()  # 커넥션 풀을 가장 먼저 초기화
+    init_db_pool()    # 1. 커넥션 풀 초기화
+    init_db_tables()  # 2. 테이블 초기화 (없으면 생성)
 
     scheduler.add_job(
         task_collect_air,

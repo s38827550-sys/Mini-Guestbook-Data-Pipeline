@@ -1,38 +1,74 @@
 import requests
-import os
-from dotenv import load_dotenv
+import sys
 
-# 1. .env 파일 로드 (1주차에 만든 파일에 SEOUL_API_KEY="본인키" 추가 필수!)
-load_dotenv()
-API_KEY = os.getenv("SEOUL_API_KEY")
+# 테스트할 서버 주소 (로컬 실행 시 기본 8000번 포트)
+BASE_URL = "http://localhost:8000"
 
-# 2. 서울시 대기오염 정보 API 주소
-# /json/RealtimeCityAir/1/5/ -> JSON 형식, 1번부터 5번 데이터까지 요청
-url = f"http://openapi.seoul.go.kr:8088/{API_KEY}/json/RealtimeCityAir/1/5/"
+def test_root():
+    print("\n--- [GET /] 루트 엔드포인트 테스트 ---")
+    try:
+        response = requests.get(f"{BASE_URL}/")
+        print(f"상태 코드: {response.status_code}")
+        print(f"응답 내용: {response.json()}")
+    except Exception as e:
+        print(f"❌ 실패: {e}")
 
-try:
-    # 3. 데이터 요청 및 응답 확인
-    response = requests.get(url)
-    data = response.json()
+def test_visit(name):
+    print(f"\n--- [POST /visit/{name}] 방문자 등록 테스트 ---")
+    try:
+        response = requests.post(f"{BASE_URL}/visit/{name}")
+        print(f"상태 코드: {response.status_code}")
+        print(f"응답 내용: {response.json()}")
+    except Exception as e:
+        print(f"❌ 실패: {e}")
 
-    # 4. JSON 데이터 파싱 (명세서의 'RealtimeCityAir' 키 내부에 'row' 리스트가 들어있음)
-    if "RealtimeCityAir" in data:
-        rows = data["RealtimeCityAir"]["row"]
-        
-        print(f"{'측정일시':<15} | {'측정소':<10} | {'미세먼지':<5} | {'초미세먼지':<5} | {'상태'}")
-        print("-" * 50)
-        
-        for row in rows:
-            dt = row.get("MSRMT_DT")      # 측정일시
-            name = row.get("MSRSTN_NM") # 측정소명
-            pm10 = row.get("PM")      # 미세먼지
-            pm25 = row.get("FPM")      # 초미세먼지
-            status = row.get("CAI_GRD")
+def test_guests():
+    print("\n--- [GET /guests] 방문자 목록 조회 테스트 ---")
+    try:
+        response = requests.get(f"{BASE_URL}/guests")
+        print(f"상태 코드: {response.status_code}")
+        print(f"응답 내용: {response.json()}")
+    except Exception as e:
+        print(f"❌ 실패: {e}")
 
-            print(f"{dt:<15} | {name:<10} | {pm10:<8} | {pm25:<8} | {status}")
-    else:
-        print("API 응답에 문제가 있습니다. 키값이나 주소를 확인해주세요.")
-        print(data)
+def test_collect_air():
+    print("\n--- [GET /collect-air] 대기질 데이터 수집(수동) 테스트 ---")
+    try:
+        response = requests.get(f"{BASE_URL}/collect-air")
+        print(f"상태 코드: {response.status_code}")
+        print(f"응답 내용: {response.json()}")
+    except Exception as e:
+        print(f"❌ 실패: {e}")
 
-except Exception as e:
-    print(f"에러가 발생했습니다: {e}")
+def test_air_data():
+    print("\n--- [GET /air-data] 대기질 데이터 조회 테스트 ---")
+    try:
+        response = requests.get(f"{BASE_URL}/air-data?limit=5")
+        print(f"상태 코드: {response.status_code}")
+        data = response.json()
+        print(f"조회 건수: {data.get('count', 0)}")
+        if data.get('data'):
+            print(f"첫 번째 데이터 샘플: {data['data'][0]}")
+    except Exception as e:
+        print(f"❌ 실패: {e}")
+
+def test_air_summary():
+    print("\n--- [GET /air-summary] 대기질 데이터 요약 테스트 ---")
+    try:
+        response = requests.get(f"{BASE_URL}/air-summary")
+        print(f"상태 코드: {response.status_code}")
+        print(f"응답 내용: {response.json()}")
+    except Exception as e:
+        print(f"❌ 실패: {e}")
+
+if __name__ == "__main__":
+    print("🚀 FastAPI 엔드포인트 통합 테스트를 시작합니다.")
+    
+    test_root()
+    test_visit("TestUser_Gemini")
+    test_guests()
+    test_collect_air()
+    test_air_data()
+    test_air_summary()
+    
+    print("\n✅ 모든 테스트 시도가 완료되었습니다.")
