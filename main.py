@@ -241,33 +241,43 @@ def task_calculate_daily_stats():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 [SYSTEM] 서버 시작 시퀀스를 가동합니다.")
-    
     try:
-        # 1. DB 연결 (DATABASE_URL 인식)
         init_db_pool() 
-        
-        # 2. 테이블 생성 및 검증
         init_db_tables() 
-        
-        # 3. 스케줄러 설정
-        scheduler.add_job(...) # (기존 코드와 동일)
-        
+
+        # 괄호()가 붙어있는지 확인하고 제거하세요!
+        scheduler.add_job(
+            task_collect_air,  # 👈 task_collect_air() 가 아니라 이름만!
+            'interval',
+            hours=1,
+            id="air_collector",
+            replace_existing=True,
+            misfire_grace_time=3600,
+            coalesce=True,
+            next_run_time=datetime.now(pytz.timezone("Asia/Seoul"))
+        )
+
+        scheduler.add_job(
+            task_calculate_daily_stats, # 👈 여기도 이름만!
+            'cron',
+            hour=0,
+            minute=5,
+            id="air_stats_daily",
+            replace_existing=True
+        )
+
         if not scheduler.running:
             scheduler.start()
             logger.info("⏰ [SYSTEM] 스케줄러가 정상 가동되었습니다.")
 
     except Exception as e:
         logger.error(f"🚨 [CRITICAL] 서버 초기화 중 치명적 오류: {e}")
-        # 배포 시 에러가 나면 여기서 멈춰야 Render 로그에서 확인이 쉽습니다.
-
-    yield  # 서버 가동 중
-
-    # --- 종료 프로세스 ---
-    logger.info("🛑 [SYSTEM] 서버 종료 프로세스 시작")
-    scheduler.shutdown()
-    if db_pool:
-        db_pool.closeall()
-        logger.info("🔌 DB 커넥션 풀 종료 완료")
+    
+    yield
+    
+    # 종료 시 에러 방지 로직 추가
+    if scheduler.running:
+        scheduler.shutdown()
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
