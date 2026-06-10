@@ -261,7 +261,8 @@ async def lifespan(app: FastAPI):
             hour=0,
             minute=5,
             id="air_stats_daily",
-            replace_existing=True
+            replace_existing=True,
+            timezone=pytz.timezone("Asia/Seoul")  # 타임존 추가
         )
 
         if not scheduler.running:
