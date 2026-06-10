@@ -75,7 +75,8 @@ scheduler.add_job(
     hour=0,
     minute=5,               # 매일 00:05 실행
     id="air_stats_daily",
-    replace_existing=True
+    replace_existing=True,
+    timezone=pytz.timezone("Asia/Seoul")
 )
 ```
 
