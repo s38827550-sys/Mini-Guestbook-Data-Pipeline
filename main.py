@@ -205,15 +205,15 @@ def task_calculate_daily_stats():
         insert_query = """
         INSERT INTO daily_air_stats (stats_date, station_name, avg_pm10, avg_pm25, max_pm10, data_count)
         SELECT 
-            CAST(measure_time AS DATE) as stats_date,
+            CAST(measure_time AT TIME ZONE 'Asia/Seoul' AS DATE) as stats_date,
             station_name,
             ROUND(AVG(pm10)::numeric, 2),
             ROUND(AVG(pm25)::numeric, 2),
             MAX(pm10),
             COUNT(*)
         FROM air_quality
-        -- 조건 변경: 오늘 데이터를 제외한 모든 과거 데이터를 대상으로 집계
-        WHERE CAST(measure_time AS DATE) < CURRENT_DATE 
+        WHERE CAST(measure_time AT TIME ZONE 'Asia/Seoul' AS DATE) 
+            < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul')::DATE
         GROUP BY stats_date, station_name
         ON CONFLICT (stats_date, station_name) 
         DO UPDATE SET 
